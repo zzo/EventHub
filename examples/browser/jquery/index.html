@@ -1,0 +1,36 @@
+<html>
+<head>
+</head>
+<body>
+ <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+ <script src="/socket.io/socket.io.js"></script>
+ <script src="/clients/browser/jquery.js"></script>
+ <button id="button">Press Me</button>
+<script>
+    var hub = new $.fn.eventHub(io, 'http://dashr.net:8888');
+    hub.bind('eventHubReady', function() {
+        console.log('EVENT HUB READY!');
+        $('#button').bind('click',
+            function(event) {
+                console.log('clicked on button - making new event for hub');
+                hub.trigger('click', { button: 'clicked' },
+                    function(back, b2) { 
+                        console.log("callback from event listener!");
+                        console.log(back); 
+                        console.log(b2); 
+                    }
+                );
+            }
+        );
+        hub.bind('click',
+            function(event, o1, fn) { 
+                console.log('got local click event: ' + event); 
+                console.log(o1);
+                console.log(fn);
+            }
+        );
+    }); 
+</script>
+</body>
+</html>
+
