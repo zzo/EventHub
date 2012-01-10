@@ -1,4 +1,4 @@
-var eventHub = require('../../clients/server/hub.js').getClientHub('http://localhost:8888');
+var eventHub = require('../../clients/server/eventClient.js').getClientHub('http://localhost:8888');
 
 eventHub.on('eventHubReady', function() { console.log("EventHub ready!"); });
 eventHub.on('click', function(data, callback) { 
