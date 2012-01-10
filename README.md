@@ -56,7 +56,7 @@ A YUI3 module called 'EventHub' in clients/browsers/yui3.js provides a client-si
     </body>
     </html>
 
-Note the <HUB HOST>:<HUB PORT> to connect to your running EventHub.  This loads in YUI3, then socket.io, and finally the YUI3 EventHub client library (yui3.js).  Simply instantiate a new Y.EventHub, and when it's ready you're ready.
+Note the &lt;HUB HOST>:&lt;HUB PORT> to connect to your running EventHub.  This loads in YUI3, then socket.io, and finally the YUI3 EventHub client library (yui3.js).  Simply instantiate a new Y.EventHub, and when it's ready you're ready.
 
 This example requires a server to server this HTML the socket.io library, and the client hub code, which is simply:
 
