@@ -9,7 +9,7 @@
 <script>
     YUI().use('node', 'EventHub', function(Y) {
 
-        var hub = new Y.EventHub(io, 'http://bidsilent.net:8888');
+        var hub = new Y.EventHub(io, 'http://bidsilent.net:5883');
         hub.on('eventHubReady', function() {
             Y.one('#button').on('click',
                 function(event) {

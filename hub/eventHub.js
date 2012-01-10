@@ -1,4 +1,5 @@
-var io = require('socket.io').listen(8888)
+var port = process.env['npm_package_config_' + port] || 5883
+    , io = require('socket.io').listen(port)
     , sockets = {}
     , toArray = function (enu) {
         var arr = [], i;
@@ -9,6 +10,8 @@ var io = require('socket.io').listen(8888)
 
         return arr;
     };
+
+console.log('listening on port ' + port);
 
 var myemit = function (ev) {
   if (ev == 'newListener') {

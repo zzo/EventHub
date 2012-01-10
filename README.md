@@ -1,23 +1,36 @@
 EventHub
 ========
 
-EventHub provides a server-side event hub and server and client side libraries to communicate with the hub.  The hub broadcasts all events to all connected clients.
+EventHub provides a server-side event hub and server and client side libraries to communicate with the hub.  The hub broadcasts all events to all connected clients.  Event callbacks are supported.
+
+Installation
+------------
+
+    % npm install EventHub -g
+    % npm start EventHub -g
+
+This will install and start the EventHub on port 5883
+
+Configuration
+-------------
+
+EventHub's default port is 5883.  Use the npm configuration variable to change it:
+
+    % npm config set EventHub.port = 8888
+
+Will change the port the EventHub listens on.  Ensure you update your clients to point to this port.
 
 The Hub
 -------
 
 The hub itself is hub/eventHub.js.  This NodeJS implementation will listen on a given port for connections.  You can run this on any host/port, just tell each client where this thing is running and they will connect to it.
 
-Starting the EventHub is simply:
-
-    % node eventHub.js
-
-Edit the file to change the default port of 8888.
-
 The Clients
 -----------
 
 ### Browser
+
+#### YUI3
 
 A YUI3 module called 'EventHub' in clients/browsers/yui3.js provides a client-side module for the EventHub.  Look in examples/browser for a test drive.  You must first start the eventHub, then set up some HTML like so:
 
@@ -67,17 +80,57 @@ This example requires a server to server this HTML the socket.io library, and th
             , connect.static(__dirname)
         )
         , io = require('socket.io').listen(server)
-        , port = 8882
+        , port = 8888
         ;
 
     server.listen(port);
     console.log('Listening on port ' + port);
 
-This uses the Connect framework to serve the static files (the HTML, the socket.io library, and the yui3 event hub module.  You of course will first need to:
+This uses the Connect framework to serve the static files (the HTML, the socket.io library, and the yui3 event hub module.
 
-    % npm install socket.io connect
+For this to all work.  Point your browser at this host, port 8888, and the example will load.  Finally you will also need a listener for the 'click' event this example fires.  That is in server example directory and explained next.
 
-For this to all work.  Point your browser at this host, port 8882, and the example will load.  Finally you will also need a listener for the 'click' event this example fires.  That is in server example directory and explained next.
+#### jQuery
+
+the jQuery client is used very similarly to the YUI3 client:
+
+    <html>
+    <head>
+    </head>
+    <body>
+     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+     <script src="/socket.io/socket.io.js"></script>
+     <script src="/clients/browser/jquery.js"></script>
+     <button id="button">Press Me</button>
+    <script>
+        var hub = new $.fn.eventHub(io, 'http://<HUB HOST>:<HUB PORT>');
+        hub.bind('eventHubReady', function() {
+            console.log('EVENT HUB READY!');
+            $('#button').bind('click',
+                function(event) {
+                    console.log('clicked on button - making new event for hub');
+                    hub.trigger('click', { button: 'clicked' },
+                        function(back, b2) { 
+                            console.log("callback from event listener!");
+                            console.log(back); 
+                            console.log(b2); 
+                        }
+                    );
+                }
+            );
+            hub.bind('click',
+                function(event, o1, fn) { 
+                    console.log('got local click event: ' + event); 
+                    console.log(o1);
+                    console.log(fn);
+                }
+            );
+        }); 
+    </script>
+    </body>
+    </html>
+
+Loading up jQuery, socket.io, and the jQuery EventHub client and bind to the button's click event.  When the hub is ready you can 'trigger' events on it and 'bind' to events from it.  I'm no jQuery expert so I hope this is sane for you jQuery people!
 
 ### NodeJS
 

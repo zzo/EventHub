@@ -7,7 +7,7 @@
  <script src="/clients/browser/jquery.js"></script>
  <button id="button">Press Me</button>
 <script>
-    var hub = new $.fn.eventHub(io, 'http://dashr.net:8888');
+    var hub = new $.fn.eventHub(io, 'http://dashr.net:5883');
     hub.bind('eventHubReady', function() {
         console.log('EVENT HUB READY!');
         $('#button').bind('click',

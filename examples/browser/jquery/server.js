@@ -5,7 +5,7 @@ var connect = require('connect')
         , connect.static(__dirname)
     )
     , io = require('socket.io').listen(server)
-    , port = 8882
+    , port = 8888
     ;
 
 server.listen(port);
