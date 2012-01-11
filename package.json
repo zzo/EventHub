@@ -1,29 +1,39 @@
 {
   "name": "EventHub",
   "description": "Event Hub and clients for event-based applications",
-  "keywords": ["event", "socket.io", "hub", "server", "client", "yui", "jquery"],
-  "version": "1.0.0",
+  "keywords": [
+    "event",
+    "socket.io",
+    "hub",
+    "server",
+    "client",
+    "yui",
+    "jquery"
+  ],
+  "version": "1.0.1",
   "author": "Mark Ethan Trostler <mark@zzo.com>",
   "preferGlobal": true,
-  "bin" : { 
-    "eventHub" : "./hub/eventHub.js"
+  "bin": {
+    "eventHub": "./hub/eventHub.js"
   },
-  "scripts" : {
-    "start"   : "node ./hub/eventHub.js --start"
+  "main": "./clients/server/eventClient.js",
+  "scripts": {
+    "start": "node ./hub/eventHub.js"
   },
-  "engines": { "node": "~0.4" },
+  "engines": {
+    "node": "~0.4"
+  },
   "repository": {
     "type": "git",
     "url": "git://github.com/zzo/EventHub.git"
   },
   "homepage": "https://github.com/zzo/EventHub",
-  "dependencies" :
-    {
-        "socket.io" : "~0.8.7"
-      , "connect" : "~1.7"
+  "dependencies": {
+    "socket.io": "~0.8.7",
+    "connect": "~1.7"
   },
-  "config" : {
-    "port" : "5883"
-  }
+  "config": {
+    "port": "5883"
+  },
+  "devDependencies": {}
 }
-
