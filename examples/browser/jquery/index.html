@@ -10,10 +10,13 @@
     var hub = new $.fn.eventHub(io, 'http://dashr.net:5883');
     hub.bind('eventHubReady', function() {
         console.log('EVENT HUB READY!');
+        var clickEvent = hub.addEvent('click');
         $('#button').bind('click',
             function(event) {
                 console.log('clicked on button - making new event for hub');
-                hub.trigger('click', { button: 'clicked' },
+                console.log(clickEvent);
+                //hub.trigger('click', { button: 'clicked' },
+                clickEvent.trigger({ button: 'clicked' },
                     function(back, b2) { 
                         console.log("callback from event listener!");
                         console.log(back); 
@@ -22,7 +25,8 @@
                 );
             }
         );
-        hub.bind('click',
+        // OR hub.bind('click', ...
+        clickEvent.bind(
             function(event, o1, fn) { 
                 console.log('got local click event: ' + event); 
                 console.log(o1);

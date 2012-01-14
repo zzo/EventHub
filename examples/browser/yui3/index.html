@@ -11,9 +11,11 @@
 
         var hub = new Y.EventHub(io, 'http://bidsilent.net:5883');
         hub.on('eventHubReady', function() {
+            var clickEvent = hub.addEvent('click');
+            console.log(clickEvent);
             Y.one('#button').on('click',
                 function(event) {
-                    hub.fire('click', { button: 'clicked' },
+                    clickEvent.fire({ button: 'clicked' },
                         function(back, b2) { 
                             Y.log("callback from event listener!");
                             Y.log(back); 
@@ -22,8 +24,7 @@
                     );
                 }
             );
-            hub.on('click',
-                function(o1, fn) { 
+            clickEvent.on(function(o1, fn) {
                     Y.log('got local click event: ' + o1.button); 
                 }
             );

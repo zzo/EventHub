@@ -11,8 +11,9 @@
         // Stash it
         $.fn.eventHub.EH = $this;
 
-        $this.socket   = io.connect(url);
+        $this.socket   = io.connect(url, {secure: true});
         $this._trigger = $this.trigger;
+        $this.events   = {};
 
         $this.socket.on('connect', function() {
             _this.socket.$emit = function() { 
@@ -23,6 +24,24 @@
 
         $this.trigger = $this.fire = function() {
             _this.socket.emit.apply(_this.socket, arguments);
+        };
+
+        /*
+         * An optional helper function to set up compiler-checkable event names
+         *  var clickEvent = hub.addEvent('click');
+         *  clickEvent.bind(function(...) { ... } );
+         *  clickEvent.trigger({ foo: 'goo' }, ... );
+         */
+        $this.addEvent = function(eventName) {
+            var _this = this;
+            this.events[eventName] = {
+                bind: function(callback) { _this.bind.call(_this, eventName, callback); }
+                , trigger: function() {
+                    Array.prototype.unshift.call(arguments, eventName);
+                    _this.trigger.apply(_this, arguments);
+                }
+            };
+            return this.events[eventName];
         };
 
         return $this;

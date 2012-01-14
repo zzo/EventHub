@@ -1,7 +1,7 @@
 var connect = require('connect')
     , server = connect.createServer(
         connect.logger()
-        , connect.static(__dirname + '/../..')
+        , connect.static(__dirname + '/../../..')
         , connect.static(__dirname)
     )
     , io = require('socket.io').listen(server)
