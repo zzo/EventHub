@@ -25,9 +25,11 @@
                 }
             );
             clickEvent.on(function(o1, fn) {
-                    Y.log('got local click event: ' + o1.button); 
-                }
+                    Y.log('got local click event: ' + o1.button);
+                }, { type: 'unicast' }
             );
+            hub.on('eventClient:done', function(ff) { console.log('event done: ' + ff); });
+            hub.on('zot', function(data) { console.log('got: ' + data); });
         });
     });
 </script>

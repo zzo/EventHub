@@ -6,10 +6,20 @@ module.exports = {
             , eventHubF = function() {
                 events.EventEmitter.call(this); 
                 this._emit = this.emit; // keep original emit method
-                this.emit = function() {
-                    this._emit.apply(this, arguments);
+                this._on   = this.on; // keep original emit method
+                this.events = {}; // keep original emit method
+                this.emit  = function() {
+                    this._emit.apply(this, arguments); // fire locally
                     if (this.socket) {
                         this.socket.emit.apply(this.socket, arguments);
+                    }
+                };
+
+                /* Tell event switch we're listening for a unicast event... */
+                this.on = function(eventName, func, args) {
+                    this._on.apply(this, arguments);
+                    if (typeof(args) !== 'undefined') {
+                        this.emit('eventHub:on', eventName, args);
                     }
                 };
             };
@@ -24,10 +34,29 @@ module.exports = {
             // explicitly listen for all events (which isn't possible anyway....)
             // SO this hub just passes all socket.io events to this local eventHub/emitter
             //socket.$emit = function() { events.EventEmitter.prototype.emit.apply(_this, arguments); };
-            socket.$emit = function() {console.log('local emit');console.log(arguments); _this._emit.apply(_this, arguments); };
+            socket.$emit = function() { _this._emit.apply(_this, arguments); };
 
             this._emit('eventHubReady');
         };
+
+        /*
+         * An optional helper function to set up compiler-checkable event names
+         *  var clickEvent = hub.addEvent('click');
+         *  clickEvent.on(function(...) { ... } );
+         *  clickEvent.fire({ foo: 'goo' }, ... );
+         */
+        eventHubF.addEvent = function(eventName) {
+            var _this = this;
+            this.events[eventName] = {
+                on: function(callback, args) { _this.on.call(_this, eventName, callback, args); }
+                , emit: function() {
+                    Array.prototype.unshift.call(arguments, eventName);
+                    _this.emit.apply(_this, arguments);
+                }
+            };
+            return this.events[eventName];
+        };
+
 
         return new eventHubF();
     },

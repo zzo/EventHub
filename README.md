@@ -140,6 +140,15 @@ So we can serve the event hub library, the socket.io library, and some example H
 
 The client will connect to the specified EventHub and uses the clients/server/eventClient.js NodeJS module to handle all EventHub interaction.  It listens for a 'click' event and excercises the callback to return data back to the event emitter.
 
+    var eventHub = require('EventHub/clients/server/eventClient.js').getClientHub('http://localhost:5883');
+
+    eventHub.on('eventHubReady', function() { console.log("EventHub ready!"); });
+    eventHub.on('click', function(data, callback) { 
+        console.log('GOT A CLICK Event');
+        console.log(data);
+        callback('howdy from server', { mark: 'trostler' });
+    });
+
 Putting It All Together
 -----------------------
 
@@ -147,3 +156,36 @@ So you start the EventHub, start the example server, and start the example NodeJ
 
 You've not got an awesome event-based archetecture so go wild!
 
+## Event Metadata
+
+You can attach metadata to the 'on' or 'bind' eventHub method which will signal the hub to act like a switch for these messages.  
+
+    hub.on('eventName', callback, { type: 'unicast' });
+
+### Unicast 
+
+If { type: 'unicast' } is specified as the metadata (the only thing currently supported) each time a new listener comes online with this metadata the event hub will ONLY pass the named event to ONLY this listener.  Any current listener will receive a special event 'eventHub:done' to notify the older listener it will no longer receive events of that type.
+
+    hub.on('eventClient:done', function(eventName) {
+        console.log('I will no longer receive ' + eventName + ' events!');
+    });
+
+Note the event hub itself emits that event.
+
+That would be a good time to finish up any event handling the listener is currently doing & then perhaps exit.  Makes deploying a breeze!
+
+This aids deployment by allowing safe shutdown of older modules/handlers and bring up of new without dropping any events
+
+### Broadcast
+
+YOU can signal 'eventClient:done' yourself as a hint/shove to listeners of braodcasted (the default) events to shut themselves down.
+
+    hub.fire('eventClient:done', 'someBroadcastedEvent');
+
+The event hub will broadcast this event to every connected client (except the sending one).  The event hub will not take any other action!  It's up to your listeners to do the right thing - which is probably 'removeListener' followed by exiting after servicing any current events.
+
+    hub.on('eventClient:done', function(eventName) {
+        hub.removeAllListeners(eventName);
+    });
+
+This aids deployment by allowing safe shutdown of older modules/handlers and bring up of new without dropping any events

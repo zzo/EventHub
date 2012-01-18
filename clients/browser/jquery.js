@@ -11,19 +11,28 @@
         // Stash it
         $.fn.eventHub.EH = $this;
 
-        $this.socket   = io.connect(url, {secure: true});
+        $this.socket   = io.connect(url);
         $this._trigger = $this.trigger;
+        $this._bind    = $this.bind;
         $this.events   = {};
 
         $this.socket.on('connect', function() {
             _this.socket.$emit = function() { 
-                $this.triggerHandler.call($this, arguments[0], Array.prototype.splice.call(arguments, 1)); 
+                _this.triggerHandler.call(_this, arguments[0], Array.prototype.splice.call(arguments, 1)); 
             };
-            $this._trigger('eventHubReady');
+            _this._trigger('eventHubReady');
         });
 
         $this.trigger = $this.fire = function() {
             _this.socket.emit.apply(_this.socket, arguments);
+        };
+
+        /* Tell event switch we're listening for a unicast event... */
+        $this.bind = function(eventName, func, args) {
+            this._bind.call(this, eventName, func);
+            if (typeof(args) !== 'undefined') {
+                this.trigger('eventHub:on', eventName, args);
+            }
         };
 
         /*
@@ -35,7 +44,7 @@
         $this.addEvent = function(eventName) {
             var _this = this;
             this.events[eventName] = {
-                bind: function(callback) { _this.bind.call(_this, eventName, callback); }
+                bind: function(callback, args) { _this.bind.call(_this, eventName, callback, args); }
                 , trigger: function() {
                     Array.prototype.unshift.call(arguments, eventName);
                     _this.trigger.apply(_this, arguments);
