@@ -10,7 +10,7 @@
     "yui",
     "jquery"
   ],
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "Mark Ethan Trostler <mark@zzo.com>",
   "preferGlobal": true,
   "bin": {
@@ -21,7 +21,7 @@
     "start": "node ./hub/eventHub.js"
   },
   "engines": {
-    "node": "~0.4"
+    "node": ">=0.4"
   },
   "repository": {
     "type": "git",
