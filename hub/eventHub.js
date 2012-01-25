@@ -1,7 +1,9 @@
 var port = process.env['npm_package_config_' + port] || 5883
-    , io = require('socket.io').listen(port)
+    , connect = require('connect')
+    , uuid    = require('node-uuid')
+    , io      = require('socket.io')
     , sockets = {}
-    , events = {}
+    , events  = {}
     , toArray = function (enu) {
         var arr = [], i;
 
@@ -10,9 +12,31 @@ var port = process.env['npm_package_config_' + port] || 5883
         }
 
         return arr;
-    };
+    }
+    , secret = 'ehrox'	 // for server-side listeners
+    , sio
+    ;
 
-console.log('listening on port ' + port);
+var app = connect(
+    connect.static(__dirname + '/../clients/browser', { maxAge: 0 })
+).listen(port);
+sio = io.listen(app, { log: true } );
+
+console.log('hub listening on port ' + port);
+
+sio.set('authorization', function (data, accept) {
+    if (data.query.token && (data.query.token === secret)) {
+        data.authenticated = true; 
+        return accept(null, true);
+    } else if (!data.query.session) {
+        data.session = uuid();
+        return accept(null, true);
+    } else if (data.query.session) {
+        data.session = data.query.session;
+        return accept(null, true);
+    }
+    return accept('No session transmitted.', false);
+});
 
 var myemit = function (ev) {
   if (ev == 'newListener') {
@@ -39,30 +63,33 @@ var myemit = function (ev) {
   return this.packet(packet);
 };
 
-io.set('transports', ['xhr-polling']); // http://brandontilley.com/2011/08/13/socket-io-and-the-latest-chrome.html
-io.sockets.on('connection', function (socket) {
-    var sock;
+sio.set('transports', ['xhr-polling']); // Needed for NodeJS clients 
+sio.sockets.on('connection', function (socket) {
+    var sock
+    , hs = socket.handshake
+    , intervalID
+    ;
 
+    // use our overridded emit function so function callbacks get passed along
     socket.emit = myemit;
 
-    socket.on('disconnect', function() { console.log('DISCONNECT'); });
-
-    // All sockets connected to hub just broadcast their events to everyone else....
+    // All sockets connected to hub just broadcast their events to everyone else.... UNLESS unicast
     socket.$emit = function() {
         var ss, event, i;
-        if (arguments[0] === 'disconnect') {
-            delete sockets[socket.id];
-            for (event in events) {
-                if (events[event] === socket.id) {
-                    events[event] = null;
-                }
+
+    if (arguments[0] === 'disconnect') {
+        delete sockets[socket.id];
+        for (event in events) {
+            if (events[event] === socket.id) {
+                events[event] = null;
             }
         }
-
-        if (arguments[0] === 'eventHub:on') {
+    } else if (arguments[0] === 'eventHub:session') {
+        socket.set('session', hs.session, function() { socket.emit('ready', hs.session); } );
+	} else if (arguments[0] === 'eventHub:on') {
             eventName = arguments[1];
             args      = arguments[2];
-            if (args.type === 'unicast') {
+            if (args.type === 'unicast' && socket.authenticated) {
                 console.log('set unicast for ' + eventName + ' to ' + socket.id);
                 if (events[eventName]) {
                     // tell previous dude he's been replaced
@@ -75,6 +102,10 @@ io.sockets.on('connection', function (socket) {
             if (arguments[0] !== 'newListener') {
                 if (events[arguments[0]]) { // UNICAST
                     ss = sockets[events[arguments[0]]];
+                    if (typeof(arguments[1] === 'object')) {
+                        // toss in session key
+                        arguments[1]['eventHub:session'] = socket.handshake.session;
+                    }
                     socket.emit.apply(ss, arguments);
                 } else { // BROADCAST
                     for (sock in sockets) {
@@ -85,7 +116,7 @@ io.sockets.on('connection', function (socket) {
                         }
                     }
                 }
-            }
+            } 
         }
     };
 

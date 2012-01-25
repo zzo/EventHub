@@ -63,9 +63,12 @@ module.exports = {
     getClientHub: function(url) {
         var client = require('socket.io/node_modules/socket.io-client')
             , socket = client.connect(url)
-            , eventHub = module.exports.getHub();
+            , eventHub = module.exports.getHub()
+        ;
 
+//        client.set('try multiple transports', true);
         socket.on('connect', function () {
+console.log('connected hub');
             eventHub.addSocket(socket);
         });
 

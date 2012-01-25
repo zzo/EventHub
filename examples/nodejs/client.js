@@ -1,6 +1,7 @@
-var eventHub = require('../../clients/server/eventClient.js').getClientHub('http://localhost:5883');
+var eventHub = require('../../clients/server/eventClient.js').getClientHub('http://localhost:5883?token=ehrox');
 
 eventHub.on('eventHubReady', function() { 
+console.log('EHR');
     eventHub.on('click', function(data, callback) { 
         console.log('GOT A CLICK Event');
         console.log(data);
@@ -17,3 +18,4 @@ eventHub.on('eventHubReady', function() {
         process.exit(0);
     });
 });
+

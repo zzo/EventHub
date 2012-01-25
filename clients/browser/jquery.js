@@ -15,12 +15,34 @@
         $this._trigger = $this.trigger;
         $this._bind    = $this.bind;
         $this.events   = {};
+        $this.session = document.cookie;
+        if ($this.session) {
+            var matches = $this.session.match(/eventHub=([^;]+)/);
+            if (matches) {
+                $this.session = matches[1];
+            } else {
+                $this.session = null;
+            }
+        }
 
-        $this.socket.on('connect', function() {
+	    $this.socket.on('ready', function(session) {
+            document.cookie = 'eventHub=' + session + '; expires=Thu, 11 Aug 2069 20:47:11 UTC; path=/`
+            _this.session = session;
             _this.socket.$emit = function() { 
                 _this.triggerHandler.call(_this, arguments[0], Array.prototype.splice.call(arguments, 1)); 
             };
             _this._trigger('eventHubReady');
+        });
+
+        $this.socket.on('connect', function() {
+            if (!$this.session) {
+                $this.socket.emit('eventHub:session');
+            } else {
+                _this.socket.$emit = function() { 
+                    _this.triggerHandler.call(_this, arguments[0], Array.prototype.splice.call(arguments, 1)); 
+                };
+                _this._trigger('eventHubReady');
+            }
         });
 
         $this.trigger = $this.fire = function() {
