@@ -101,10 +101,21 @@ sio.sockets.on('connection', function (socket) {
         } else {
             if (arguments[0] !== 'newListener') {
                 if (events[arguments[0]]) { // UNICAST
-                    ss = sockets[events[arguments[0]]];
+                    ss = sockets[events[arguments[0]]]; // 'ss' is socket to send to
+                                                        // 'socket' is where this event came from
                     if (typeof(arguments[1] === 'object')) {
                         // toss in session key
-                        arguments[1]['eventHub:session'] = socket.handshake.session;
+                        if (socket.handshake.session) {
+                            arguments[1]['eventHub:session'] = socket.handshake.session;
+                        } 
+                        // toss in 'authenticated'
+                        if (socket.handshake.authenticated) {
+                            arguments[1]['eventHub:authenticated'] = true;
+                        } else {
+                            // don't let someone sneak this in!
+                            delete arguments[1]['eventHub:authenticated'];
+                            delete arguments[1]['eventHub:session'];
+                        }
                     }
                     socket.emit.apply(ss, arguments);
                 } else { // BROADCAST
