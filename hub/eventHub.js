@@ -85,11 +85,15 @@ sio.sockets.on('connection', function (socket) {
             }
         }
     } else if (arguments[0] === 'eventHub:session') {
-        socket.set('session', hs.session, function() { socket.emit('ready', hs.session); } );
+        if (arguments[1]) {
+            hs.session = arguments[1];
+        }
+        //socket.set('session', hs.session, function() { socket.emit('ready', hs.session); } );
+        socket.emit('ready', hs.session);
 	} else if (arguments[0] === 'eventHub:on') {
             eventName = arguments[1];
             args      = arguments[2];
-            if (args.type === 'unicast' && socket.authenticated) {
+            if (args.type === 'unicast' && hs.authenticated) {
                 console.log('set unicast for ' + eventName + ' to ' + socket.id);
                 if (events[eventName]) {
                     // tell previous dude he's been replaced
@@ -101,28 +105,41 @@ sio.sockets.on('connection', function (socket) {
         } else {
             if (arguments[0] !== 'newListener') {
                 if (events[arguments[0]]) { // UNICAST
+
+                    /* 
+                     * So this can be a message from a client or from a backend to
+                     *  another backend
+                     *
+                     * If it's from a client then we need to insert the session
+                     * If it's from a backend then the backend needs to include the session
+                     *    it should already have  if it's needed
+                     */
                     ss = sockets[events[arguments[0]]]; // 'ss' is socket to send to
                                                         // 'socket' is where this event came from
-                    if (typeof(arguments[1] === 'object')) {
-                        // toss in session key
-                        if (socket.handshake.session) {
-                            arguments[1]['eventHub:session'] = socket.handshake.session;
-                        } 
-                        // toss in 'authenticated'
-                        if (socket.handshake.authenticated) {
-                            arguments[1]['eventHub:authenticated'] = true;
-                        } else {
-                            // don't let someone sneak this in!
-                            delete arguments[1]['eventHub:authenticated'];
-                            delete arguments[1]['eventHub:session'];
+                    if (ss) {
+                        if (typeof(arguments[1] === 'object')) {
+                            // toss in session key
+                            if (hs.session) {
+                                arguments[1]['eventHub:session'] = hs.session;
+                            } 
                         }
+                        socket.emit.apply(ss, arguments);
                     }
-                    socket.emit.apply(ss, arguments);
                 } else { // BROADCAST
                     for (sock in sockets) {
                         // we'll use the emit from this socket BUT set 'this' to be the actual socket we wanna use
                         //  we send oursevles because 'broadcast' does not handle acknowledgements
                         if (arguments[0] !== 'eventClient:done' || sock !== socket.id) {
+                            // If the guy we're broadcasthing this to is authenticated & there's a session
+                            //  associated with the sender & then toss in the session
+                            if (sockets[sock].handshake.authenticated && hs.session && typeof arguments[1] === 'object') {
+                                arguments[1]['eventHub:session'] = hs.session;
+                            } else {
+                                // otherwise no session key for you
+                                if (typeof arguments[1] === 'object') {
+                                    delete arguments[1]['eventHub:session'];
+                                }
+                            }
                             socket.emit.apply(sockets[sock], arguments);
                         }
                     }

@@ -5,42 +5,28 @@ YUI().add('EventHub', function(Y) {
         this.events  = {};
         this._fire   = this.fire;
 //        this._on     = this.on;
-        this.session = Y.Cookie.get("eventHub");
-        console.log('CURRENT SESSION: ' + this.session);
 
-        // set up session
-        var firstSocket = io.connect(url);
+        var socket = io.connect(url);
 
-	    firstSocket.on('ready', function(session) {
+        // cookie-ize the  session
+	    socket.on('ready', function(session) {
             Y.Cookie.set("eventHub", session, { expires: new Date("August 11, 2069"), path: '/' });
-            _this.session = session;
-            firstSocket.$emit = function() { _this._fire.apply(_this, arguments); };
+            socket.$emit = function() { _this._fire.apply(_this, arguments); };
             _this._fire('eventHubReady');
         });
 
-        firstSocket.on('connect', function() {
-            if (!_this.session) {
-                firstSocket.emit('eventHub:session');
-            } else {
-                firstSocket.$emit = function() { _this._fire.apply(_this, arguments); };
-                _this._fire('eventHubReady');
-            }
-
+        socket.on('connect', function() {
+            socket.emit('eventHub:session', Y.Cookie.get('eventHub'));
             Y.Global.Hub = _this;
         });
 
         this.fire = function() {
-            if (typeof arguments[1] === 'object') { 
-                arguments[1]['eventHub:session'] = this.session;
-            } else if (typeof arguments[1] == 'function') {
-                arguments[2] = arguments[1];    // the callback
-                arguments[1] = { 'eventHub:session': this.session };
-            } else {
-                arguments[1] = { 'eventHub:session': this.session };
-            }
-            firstSocket.emit.apply(firstSocket, arguments);
+            socket.emit.apply(socket, arguments);
         };
 
+        /**
+         * Can there be such a thing as a browser event unicast listener????
+         **/
         /* Tell event switch we're listening for a unicast event... 
         this.on = function(eventName, func, args) {
             this._on.apply(this, arguments);

@@ -35,14 +35,7 @@
         });
 
         $this.socket.on('connect', function() {
-            if (!$this.session) {
-                $this.socket.emit('eventHub:session');
-            } else {
-                _this.socket.$emit = function() { 
-                    _this.triggerHandler.call(_this, arguments[0], Array.prototype.splice.call(arguments, 1)); 
-                };
-                _this._trigger('eventHubReady');
-            }
+            $this.socket.emit('eventHub:session', $this.session);
         });
 
         $this.trigger = $this.fire = function() {
