@@ -75,36 +75,56 @@ sio.sockets.on('connection', function (socket) {
 
     // All sockets connected to hub just broadcast their events to everyone else.... UNLESS unicast
     socket.$emit = function() {
-        var ss, event, i;
+        var ss, event, i
+            , args = toArray(arguments);
+        ;
 
-    if (arguments[0] === 'disconnect') {
-        delete sockets[socket.id];
-        for (event in events) {
-            if (events[event] === socket.id) {
-                events[event] = null;
-            }
-        }
-    } else if (arguments[0] === 'eventHub:session') {
-        if (arguments[1]) {
-            hs.session = arguments[1];
-        }
-        //socket.set('session', hs.session, function() { socket.emit('ready', hs.session); } );
-        socket.emit('ready', hs.session);
-	} else if (arguments[0] === 'eventHub:on') {
-            eventName = arguments[1];
-            args      = arguments[2];
-            if (args.type === 'unicast' && hs.authenticated) {
-                console.log('set unicast for ' + eventName + ' to ' + socket.id);
-                if (events[eventName]) {
-                    // tell previous dude he's been replaced
-                    console.log('tell ' + events[eventName] + ' they are done with ' + eventName);
-                    socket.emit.call(sockets[events[eventName]], 'eventClient:done', eventName);
+        // If an non-authenticated socket just sent us a session key make sure it's the right one
+        if (typeof args[1] === 'object' && args[1] !== null) {
+            if (typeof args[1]['eventHub:session'] !== 'undefined' && !hs.authenticated) {
+                if (args[1]['eventHub:session'] !== hs.session) {
+                    // something funny going on..... not passing on this event
+                    return;
                 }
-                events[eventName] = socket.id;
             }
+        }
+
+        if (args[0] === 'disconnect') {
+            delete sockets[socket.id];
+            for (event in events) {
+                if (events[event] === socket.id) {
+                    events[event] = null;
+                }
+            }
+        } else if (args[0] === 'eventHub:session') {
+            if (args[1]) {
+                hs.session = args[1];
+            }
+            socket.set('session', hs.session, function() { socket.emit('ready', hs.session); } );
+        } else if (args[1] === 'eventHub:on') {
+                eventName = args[1];
+                var xtra      = args[2];
+                if (xtra.type === 'unicast' && hs.authenticated) {
+                    console.log('set unicast for ' + eventName + ' to ' + socket.id);
+                    if (events[eventName]) {
+                        // tell previous dude he's been replaced
+                        console.log('tell ' + events[eventName] + ' they are done with ' + eventName);
+                        socket.emit.call(sockets[events[eventName]], 'eventClient:done', eventName);
+                    }
+                    events[eventName] = socket.id;
+                }
         } else {
-            if (arguments[0] !== 'newListener') {
-                if (events[arguments[0]]) { // UNICAST
+            if (args[0] !== 'newListener') {
+
+                // Evenryday i'm shufflin.... - make room for session key
+                if (hs.session && typeof args[1] !== 'object') {
+                    if (typeof args[1] !== 'undefined') {
+                        args[2] = args[1];
+                        args[1] = {};
+                    }
+                }
+
+                if (events[args[0]]) { // UNICAST
 
                     /* 
                      * So this can be a message from a client or from a backend to
@@ -114,33 +134,33 @@ sio.sockets.on('connection', function (socket) {
                      * If it's from a backend then the backend needs to include the session
                      *    it should already have  if it's needed
                      */
-                    ss = sockets[events[arguments[0]]]; // 'ss' is socket to send to
+                    ss = sockets[events[args[0]]]; // 'ss' is socket to send to
                                                         // 'socket' is where this event came from
                     if (ss) {
-                        if (typeof(arguments[1] === 'object')) {
+                        if (typeof(args[1] === 'object')) {
                             // toss in session key
                             if (hs.session) {
-                                arguments[1]['eventHub:session'] = hs.session;
+                                args[1]['eventHub:session'] = hs.session;
                             } 
                         }
-                        socket.emit.apply(ss, arguments);
+                        socket.emit.apply(ss, args);
                     }
                 } else { // BROADCAST
                     for (sock in sockets) {
                         // we'll use the emit from this socket BUT set 'this' to be the actual socket we wanna use
                         //  we send oursevles because 'broadcast' does not handle acknowledgements
-                        if (arguments[0] !== 'eventClient:done' || sock !== socket.id) {
+                        if (args[0] !== 'eventClient:done' || sock !== socket.id) {
                             // If the guy we're broadcasthing this to is authenticated & there's a session
                             //  associated with the sender & then toss in the session
-                            if (sockets[sock].handshake.authenticated && hs.session && typeof arguments[1] === 'object') {
-                                arguments[1]['eventHub:session'] = hs.session;
+                            if (sockets[sock].handshake && sockets[sock].handshake.authenticated && hs.session && typeof args[1] === 'object') {
+                                args[1]['eventHub:session'] = hs.session;
                             } else {
                                 // otherwise no session key for you
-                                if (typeof arguments[1] === 'object') {
-                                    delete arguments[1]['eventHub:session'];
+                                if (typeof args[1] === 'object') {
+                                    delete args[1]['eventHub:session'];
                                 }
                             }
-                            socket.emit.apply(sockets[sock], arguments);
+                            socket.emit.apply(sockets[sock], args);
                         }
                     }
                 }
