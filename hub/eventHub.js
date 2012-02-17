@@ -79,6 +79,12 @@ sio.sockets.on('connection', function (socket) {
             , args = toArray(arguments);
         ;
 
+        // some sanity
+        if (args[0].match(/^eventClient/)) {
+            // Hey only _I_ can send these messages!!
+            return;
+        }
+
         // If an non-authenticated socket just sent us a session key make sure it's the right one
         if (typeof args[1] === 'object' && args[1] !== null) {
             if (typeof args[1]['eventHub:session'] !== 'undefined' && !hs.authenticated) {
@@ -102,8 +108,8 @@ sio.sockets.on('connection', function (socket) {
             }
             socket.set('session', hs.session, function() { socket.emit('ready', hs.session); } );
         } else if (args[1] === 'eventHub:on') {
-                eventName = args[1];
-                var xtra      = args[2];
+                var eventName = args[1]
+                    , xtra    = args[2];
                 if (xtra.type === 'unicast' && hs.authenticated) {
                     console.log('set unicast for ' + eventName + ' to ' + socket.id);
                     if (events[eventName]) {

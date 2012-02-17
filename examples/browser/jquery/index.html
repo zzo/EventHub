@@ -3,19 +3,17 @@
 </head>
 <body>
  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
- <script src="/socket.io/socket.io.js"></script>
- <script src="/clients/browser/jquery.js"></script>
+ <script src="http://dashr.net:5883/socket.io/socket.io.js"></script>
+ <script src="http://dashr.net:5883/jquery.js"></script>
  <button id="button">Press Me</button>
 <script>
     var hub = new $.fn.eventHub(io, 'http://dashr.net:5883');
     hub.bind('eventHubReady', function() {
-        console.log('EVENT HUB READY!');
         var clickEvent = hub.addEvent('click');
         $('#button').bind('click',
             function(event) {
                 console.log('clicked on button - making new event for hub');
                 console.log(clickEvent);
-                //hub.trigger('click', { button: 'clicked' },
                 clickEvent.trigger({ button: 'clicked' },
                     function(back, b2) { 
                         console.log("callback from event listener!");
@@ -26,7 +24,6 @@
             }
         );
         // OR hub.bind('click', ...
-//        hub.bind('click',
         clickEvent.bind(
             function(event, obj, fun) {
                 console.log('got local click event');

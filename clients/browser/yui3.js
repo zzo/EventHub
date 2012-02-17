@@ -1,41 +1,30 @@
 YUI().add('EventHub', function(Y) {
     Y.EventHub = function(io, url) {
-        var _this    = this;
+        var _this    = this,
+            socket = io.connect(url)
+        ;
 
+        // Bookkeeping
         this.events  = {};
         this._fire   = this.fire;
-//        this._on     = this.on;
 
-        var socket = io.connect(url);
-
-        // cookie-ize the  session
+        // Get the session & cookie-ize the  session
 	    socket.on('ready', function(session) {
             Y.Cookie.set("eventHub", session, { expires: new Date("August 11, 2069"), path: '/' });
-            socket.$emit = function() { _this._fire.apply(_this, arguments); };
+            socket.$emit = function() { /* fire events locally */ _this._fire.apply(_this, arguments); };
             _this._fire('eventHubReady');
         });
 
+        // Set our session if we have one
         socket.on('connect', function() {
             socket.emit('eventHub:session', Y.Cookie.get('eventHub'));
             Y.Global.Hub = _this;
         });
 
+        // Fire all events off to the hub
         this.fire = function() {
             socket.emit.apply(socket, arguments);
         };
-
-        /**
-         * Can there be such a thing as a browser event unicast listener????
-         **/
-        /* Tell event switch we're listening for a unicast event... 
-        this.on = function(eventName, func, args) {
-            this._on.apply(this, arguments);
-            if (typeof(args) !== 'undefined') {
-                args['eventHub:session'] = this.session;
-                this.fire('eventHub:on', eventName, args);
-            }
-        };
-        */
 
         /*
          * An optional helper function to set up compiler-checkable event names
@@ -45,9 +34,12 @@ YUI().add('EventHub', function(Y) {
          */
         this.addEvent = function(eventName) {
             var _this = this;
+
+            // Dummy up an object that drop in the event name for listening & firing
             this.events[eventName] = {
-                on: function(callback, args) { _this.on.call(_this, eventName, callback, args); }
+                on: function(callback) { _this.on.call(_this, eventName, callback); }
                 , fire: function() {
+                    // Shove event name back in argument list & fire it
                     Array.prototype.unshift.call(arguments, eventName);
                     _this.fire.apply(_this, arguments);
                 }
@@ -55,6 +47,9 @@ YUI().add('EventHub', function(Y) {
             return this.events[eventName];
         };
     };
+
+    // We're an event target
     Y.augment(Y.EventHub, Y.EventTarget);
+
 }, '1.0', { requires: [ 'event-custom', 'cookie' ] });
 
