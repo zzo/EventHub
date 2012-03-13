@@ -107,7 +107,7 @@ sio.sockets.on('connection', function (socket) {
                 hs.session = args[1];
             }
             socket.set('session', hs.session, function() { socket.emit('ready', hs.session); } );
-        } else if (args[1] === 'eventHub:on') {
+        } else if (args[0] === 'eventHub:on') {
                 var eventName = args[1]
                     , xtra    = args[2];
                 if (xtra.type === 'unicast' && hs.authenticated) {
@@ -131,7 +131,6 @@ sio.sockets.on('connection', function (socket) {
                 }
 
                 if (events[args[0]]) { // UNICAST
-
                     /* 
                      * So this can be a message from a client or from a backend to
                      *  another backend
@@ -149,7 +148,7 @@ sio.sockets.on('connection', function (socket) {
                                 args[1]['eventHub:session'] = hs.session;
                             } 
                         }
-                        socket.emit.apply(ss, args);
+                        ss.emit.apply(ss, args);
                     }
                 } else { // BROADCAST
                     for (sock in sockets) {
