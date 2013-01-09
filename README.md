@@ -230,7 +230,7 @@ Now to 'convert' this function to an event handler for the Hub is trivial:
         eventHub.on('click', eventHub.makeListener(worker), { type: 'unicast' });
     });
 
-Using the eventHub.makeListener method the 'worker' function will now be wrapped by code that will call the Hub-supplied callback correctly: callback(null, <retvalue>) on success and callback(<error value>) if your function throws a value.
+Using the eventHub.makeListener method the 'worker' function will now be wrapped by code that will call the Hub-supplied callback correctly: callback(null, &lt;retvalue&rt;) on success and callback(&lt;error value&rt;) if your function throws a value.
     
 The original function does not reference the Hub infrastructure at all your converting and testing are made that much simpler.
 
