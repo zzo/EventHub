@@ -190,3 +190,47 @@ The event hub will broadcast this event to every connected client (except the se
     });
 
 This aids deployment by allowing safe shutdown of older modules/handlers and bring up of new without dropping any events
+
+Converting Existing Code and Testing
+------------------------------------
+
+To ease testing and pre-Hub code conversion an optional 'makeListener' method is provided by the Hub which lets you turn any 'ordinary' function into an event listener.  Now you can convert and test your function(s) in isolation from the Hub infratstructure further minimizing testing dependencies.  It works like this:
+
+    // No Hub dependencies/knowledge here... Just a plain old regular function
+    function worker(data) {
+        var ret = {};
+        if (data.foo) {
+            ret.moo = "goo";
+        } else {
+            throw { message: "Did not get foo!" };
+        }
+    }
+
+The worker function only takes the same 'data' hash present in a normal listener but instead of also accepting a 'callback' parameter this function simply returns the result if there was no error or 'throws' an object on error.  This function can be tested very easily without any reference to any Hub infrastructure:
+
+    // Look ma no mention of Event Hubs!
+    function testWorkerGoodInput {
+        var result1 = worker({ foo: 'howdy' });
+        assert(result.moo === 'goo');   // works fine!
+    }
+
+    // Look ma no mention of Event Hubs!
+    function testWorkerBadInput {
+        try {
+            var result1 = worker({});
+            assert(false);
+        } catch(e) {
+            assert(e.message === "Did not get foo!");
+        }
+    }
+
+Now to 'convert' this function to an event handler for the Hub is trivial:
+
+    eventHub.on('eventHubReady', function() { 
+        eventHub.on('click', eventHub.makeListener(worker), { type: 'unicast' });
+    });
+
+Using the eventHub.makeListener method the 'worker' function will now be wrapped by code that will call the Hub-supplied callback correctly: callback(null, <retvalue>) on success and callback(<error value>) if your function throws a value.
+    
+The original function does not reference the Hub infrastructure at all your converting and testing are made that much simpler.
+

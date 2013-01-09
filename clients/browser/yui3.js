@@ -46,6 +46,22 @@ YUI().add('EventHub', function(Y) {
             };
             return this.events[eventName];
         };
+
+        this.makeListener = function(func, thisp) {
+            // if no callback assume a local call
+            return function(data, callback) {
+                try {
+                    var ret = func.call(thisp, data);
+                    return callback ? callback(null, ret) : ret;
+                } catch(e) {
+                    if (callback) {
+                        callback(e)
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        };
     };
 
     // We're an event target

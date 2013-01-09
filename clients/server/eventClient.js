@@ -45,7 +45,7 @@ module.exports = {
          *  clickEvent.on(function(...) { ... } );
          *  clickEvent.fire({ foo: 'goo' }, ... );
          */
-        eventHubF.addEvent = function(eventName) {
+        eventHubF.prototype.addEvent = function(eventName) {
             var _this = this;
             this.events[eventName] = {
                 on: function(callback, args) { _this.on.call(_this, eventName, callback, args); }
@@ -57,6 +57,21 @@ module.exports = {
             return this.events[eventName];
         };
 
+        eventHubF.prototype.makeListener = function(func, thisp) {
+            // if no callback assume a local call
+            return function(data, callback) {
+                try {
+                    var ret = func.call(thisp, data);
+                    return callback ? callback(null, ret) : ret;
+                } catch(e) {
+                    if (callback) {
+                        callback(e)
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        };
 
         return new eventHubF();
     },
@@ -68,10 +83,24 @@ module.exports = {
 
 //        client.set('try multiple transports', true);
         socket.on('connect', function () {
-console.log('connected hub');
             eventHub.addSocket(socket);
         });
 
         return eventHub;
+    }
+    , makeListener: function(func, thisp) {
+        // if no callback assume a local call
+        return function(data, callback) {
+            try {
+                var ret = func.call(thisp, data);
+                return callback ? callback(null, ret) : ret;
+            } catch(e) {
+                if (callback) {
+                    callback(e)
+                } else {
+                    throw e;
+                }
+            }
+        }
     }
 };

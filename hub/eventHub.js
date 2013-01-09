@@ -13,7 +13,7 @@ var port = process.env['npm_package_config_' + port] || 5883
 
         return arr;
     }
-    , secret = 'ehrox'	 // for server-side listeners
+    , secret = 'ehrox'	 // for server-side listeners - change it!
     , sio
     ;
 
