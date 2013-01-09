@@ -234,3 +234,4 @@ Using the eventHub.makeListener method the 'worker' function will now be wrapped
     
 The original function does not reference the Hub infrastructure at all your converting and testing are made that much simpler.
 
+
