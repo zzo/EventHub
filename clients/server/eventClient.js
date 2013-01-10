@@ -20,12 +20,23 @@ module.exports = {
                     this._on.apply(this, arguments);
                     if (typeof(args) !== 'undefined') {
                         this.emit('eventHub:on', eventName, args);
+                        this.once('eventClient:unicast' + eventName, function(err) {
+                            if (args.cb) {
+                                args.cb(err);
+                            }
+                        });
                     }
                 };
             }
         ;
 
         util.inherits(eventHubF, events.EventEmitter);
+
+        eventHubF.prototype.close = function(socket) {
+            if (this.socket) {
+                this.socket.disconnect();
+            }
+        };
 
         eventHubF.prototype.addSocket = function(socket) {
             var _this = this;
@@ -78,11 +89,14 @@ module.exports = {
     },
     getClientHub: function(url) {
         var client = require('socket.io/node_modules/socket.io-client')
-            , socket = client.connect(url)
+            , socket = client.connect(url,
+                {
+                    'force new connection': true
+                }
+            )
             , eventHub = module.exports.getHub()
         ;
 
-//        client.set('try multiple transports', true);
         socket.on('connect', function () {
             eventHub.addSocket(socket);
         });
