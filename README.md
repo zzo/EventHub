@@ -15,16 +15,62 @@ This will install and start the EventHub on port 5883
 Configuration
 -------------
 
+### Port
+
+The server listens on a port that all clients must use!
+
 EventHub's default port is 5883.  Use the npm configuration variable to change it:
 
     % npm config set EventHub.port = 8888
 
 Will change the port the EventHub listens on.  Ensure you update your clients to point to this port.
 
+You can also set the Hub's port using the Hub API as discussed below (make sure you setPort before 'start'ing the Hub!).
+
+### Hub Secret
+
+The Hub has a 'secret' value - a string.  Clients who wish to listen for unicast events (see the Unicast section below) must provide this string when connecting to the Hub.  Currently this value can only be configured by the 'setSecret' method in the Hub API and should be set BEFORE 'start'ing the Hub!
+
+Clients append the 'token' query string parameter to the connect URL like so:
+
+#### NodeJS
+
+    var EventHubClient = require('EventHub/clients/server/eventClient')
+        , client = EventHubClient.getClientHub('http://HubHost:HubPort?token=SECRET_VALUE')
+    ;
+
+#### YUI3
+
+    var hub = new Y.EventHub(io, 'http://HubHost:HubPort?token=SECRET_VALUE');
+
+#### jQuery
+
+    var hub = new $.fn.eventHub(io, 'http://HubHost:HubPort?token=SECRET_VALUE');
+
 The Hub
 -------
 
-The hub itself is hub/eventHub.js.  This NodeJS implementation will listen on a given port for connections.  You can run this on any host/port, just tell each client where this thing is running and they will connect to it.
+The hub itself is hub/hub.js but is most easily started by executing hub/eventHub.js.  This NodeJS implementation will listen on a given port for connections.  You can run this on any host/port, just tell each client where this thing is running and they will connect to it.
+
+### The Hub API
+
+To fiddle with the Hub yourself programmatically first require it:
+
+    Hub = require('EventHub/hub/hub');
+
+Methods available are:
+
+    Hub.start();
+
+    Hub.shutdown();  // BEWARE currently Hub make take up to 20 seconds to shutdown!
+
+    Hub.getPort();
+
+    Hub.setPort(port); // Must call before start!
+
+    Hub.getSecret(); // MUST call before start!
+
+    Hub.setSecret(secret); // SHOULD call before start!
 
 The Clients
 -----------
@@ -163,9 +209,27 @@ You can attach metadata to the 'on' or 'bind' eventHub method which will signal 
 
     hub.on('eventName', callback, { type: 'unicast' });
 
+NOTE the 'on' method is asynchronous itself as it must communicate with the remote Hub to register the event.
+
 ### Unicast 
 
-If { type: 'unicast' } is specified as the metadata (the only thing currently supported) each time a new listener comes online with this metadata the event hub will ONLY pass the named event to ONLY this listener.  Any current listener will receive a special event 'eventHub:done' to notify the older listener it will no longer receive events of that type.
+If { type: 'unicast' } is specified as the metadata (the only thing currently supported) each time a new listener comes online with this metadata the event hub will ONLY pass the named event to ONLY this listener.  
+
+ONLY AUTHETNICATED CLIENTS CAN LISTEN FOR UNICAST EVENTS!  See above for how Authentication works.
+
+Upon specifying { type: 'unicast' } you can/should also specify a callback to determine the result of your attempted event registration.  Currently the only possible error is if you attempt to register for unicast event but your client is not authenticated.  That all looks like this:
+
+    hub.on('myunicastevent', function() {}, { type: 'unicast', cb: function(error) {
+        if (error) {
+            // I was not able to register my listener for this event!
+        } else {
+            // all is cool & my event is now registered to me
+        }
+    });
+
+The 'cb' property is a function which has a single 'error' parameter - if that parameter is non-null Houston you've got a problem (currently it is a string that is 'Not Authorized').
+
+When another client successfully registers for a unicast event the current unicast listener will receive a special event 'eventHub:done' to notify it that it will no longer receive events of that type.
 
     hub.on('eventClient:done', function(eventName) {
         console.log('I will no longer receive ' + eventName + ' events!');
@@ -173,23 +237,15 @@ If { type: 'unicast' } is specified as the metadata (the only thing currently su
 
 Note the event hub itself emits that event.
 
-That would be a good time to finish up any event handling the listener is currently doing & then perhaps exit.  Makes deploying a breeze!
+This isi the time to finish up any event handling the listener is currently doing & then perhaps exit.  Makes deploying a breeze!
 
 This aids deployment by allowing safe shutdown of older modules/handlers and bring up of new without dropping any events
+
+Examples of this kind of event are authentication and session management.
 
 ### Broadcast
 
-YOU can signal 'eventClient:done' yourself as a hint/shove to listeners of braodcasted (the default) events to shut themselves down.
-
-    hub.fire('eventClient:done', 'someBroadcastedEvent');
-
-The event hub will broadcast this event to every connected client (except the sending one).  The event hub will not take any other action!  It's up to your listeners to do the right thing - which is probably 'removeListener' followed by exiting after servicing any current events.
-
-    hub.on('eventClient:done', function(eventName) {
-        hub.removeAllListeners(eventName);
-    });
-
-This aids deployment by allowing safe shutdown of older modules/handlers and bring up of new without dropping any events
+Not specifying { type: 'unicast' } means you are listening for a broadcasted event.  You do not need any authorization to listen for a broadcasted event.  You probably do NOT want to use any callbacks for broadcasted events.  Examples of this kind of event are logging and presence notifications.
 
 Converting Existing Code and Testing
 ------------------------------------

@@ -1,7 +1,6 @@
 module.exports = (function() {
 
     var port = process.env['npm_package_config_' + port] || 5883
-        //, connect = require('connect')
         , http    = require('http')
         , uuid    = require('node-uuid')
         , io      = require('socket.io')
@@ -39,7 +38,6 @@ module.exports = (function() {
         getPort: function() { return port; }
         , setPort: function(p) { port = p; }
         , setSocketIO: function(sio) { io = sio; }
-        , setConnect: function(conn) { connect = conn; }
         , setUUID: function(id) { uuid = id; }
         , getSockets: function() { return sockets; }
         , getEvents: function() { return events; }
@@ -47,13 +45,6 @@ module.exports = (function() {
         , getSecret: function() { return secret; }
         , shutdown: function() {
             app.close();
-            /*
-            var socket;
-            for (socket in sockets) {
-                //console.log(sockets[socket]);
-                sockets[socket] = null;
-            }
-            */
         }
         , start: function() {
 
