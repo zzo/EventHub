@@ -10,7 +10,7 @@
     "yui",
     "jquery"
   ],
-  "version": "1.2",
+  "version": "1.2.0",
   "author": "Mark Ethan Trostler <mark@zzo.com>",
   "preferGlobal": true,
   "bin": {

@@ -4,6 +4,19 @@ var events = require('events')
     , http = require('http')
 ;
 
+function getClient(url, cb) {
+    var client = HubClient.getClientHub(url);
+    client.on('eventHubReady', function() {
+        cb(client);
+    });
+}
+
+function beDone(runs, waitsFor) {
+    var reallyDone;
+    runs(function() { setTimeout(function() { reallyDone = true; }, 20000); });
+    waitsFor(function() { return reallyDone; }, "All Done", 21000);
+}
+
 describe("Server Startup", function() {
     var port;
 
@@ -11,20 +24,22 @@ describe("Server Startup", function() {
     afterEach(function() { Hub.shutdown(); });
 
     it("Started and can connect", function() {
-        var client = HubClient.getClientHub('http://localhost:' + port)
+        var client
             , connected
             , reallyDone
         ;
 
-        runs(
-            function() { client.on('eventHubReady', function() { connected = true }) }
-        );
+        runs(function() {
+            getClient('http://localhost:' + port, function(cl) {
+                client = cl;
+                connected = true;
+            });
+        });
 
         waitsFor(function() { return connected; }, "Client could not connect to hub", 5000);
         runs(function() { client.close(); expect(connected).toBeTruthy(); });
 
-        runs(function() { setTimeout(function() { reallyDone = true; }, 20000); });
-        waitsFor(function() { return reallyDone; }, "All Done", 25000);
+        beDone(runs, waitsFor);
     });
     it("Get socket.io JS", function(done) {
         var path = '/socket.io/socket.io.js';
@@ -74,12 +89,12 @@ describe("Server Startup", function() {
 
         runs(
             function() { 
-                client1 = HubClient.getClientHub('http://localhost:' + port);
-                client1.on('eventHubReady', function() {
-                    client2 = HubClient.getClientHub('http://localhost:' + port);
-                    client2.on('eventHubReady', function() {
-                        client3 = HubClient.getClientHub('http://localhost:' + port);
-                        client3.on('eventHubReady', function() {
+                getClient('http://localhost:' + port, function(cl) {
+                    client1 = cl;
+                    getClient('http://localhost:' + port, function(cl) {
+                        client2 = cl;
+                        getClient('http://localhost:' + port, function(cl) {
+                            client3 = cl;
                             allConnected = true;
                         });
                     });
@@ -111,8 +126,7 @@ describe("Server Startup", function() {
             expect(gotFoo2).toBeTruthy(); 
         });
 
-        runs(function() { setTimeout(function() { reallyDone = true; }, 20000); });
-        waitsFor(function() { return reallyDone; }, "All Done", 25000);
+        beDone(runs, waitsFor);
     });
     it("Pass simple unicast event", function() {
         var client1
@@ -124,10 +138,10 @@ describe("Server Startup", function() {
 
         runs(
             function() { 
-                client1 = HubClient.getClientHub('http://localhost:' + port + '?token=ehrox');
-                client1.on('eventHubReady', function() {
-                    client2 = HubClient.getClientHub('http://localhost:' + port);
-                    client2.on('eventHubReady', function() {
+                getClient('http://localhost:' + port + '?token=ehrox', function(cl) {
+                    client1 = cl;
+                    getClient('http://localhost:' + port, function(cl) {
+                        client2 = cl;
                         bothConnected = true;
                     });
                 });
@@ -149,8 +163,7 @@ describe("Server Startup", function() {
         waitsFor(function() { return gotFoo; }, "Clients send/receive event", 5000);
         runs(function() { client1.close(); client2.close(); expect(gotFoo).toBeTruthy(); });
 
-        runs(function() { setTimeout(function() { reallyDone = true; }, 20000); });
-        waitsFor(function() { return reallyDone; }, "All Done", 25000);
+        beDone(runs, waitsFor);
     });
     it("unicast event callback", function() {
         var client1
@@ -162,10 +175,10 @@ describe("Server Startup", function() {
 
         runs(
             function() { 
-                client1 = HubClient.getClientHub('http://localhost:' + port + '?token=ehrox');
-                client1.on('eventHubReady', function() {
-                    client2 = HubClient.getClientHub('http://localhost:' + port);
-                    client2.on('eventHubReady', function() {
+                getClient('http://localhost:' + port + '?token=ehrox', function(cl) {
+                    client1 = cl;
+                    getClient('http://localhost:' + port, function(cl) {
+                        client2 = cl;
                         bothConnected = true;
                     });
                 });
@@ -192,8 +205,7 @@ describe("Server Startup", function() {
         waitsFor(function() { return gotFoo; }, "Clients send/receive event", 5000);
         runs(function() { client1.close(); client2.close(); expect(gotFoo).toBeTruthy(); });
 
-        runs(function() { setTimeout(function() { reallyDone = true; }, 20000); });
-        waitsFor(function() { return reallyDone; }, "All Done", 25000);
+        beDone(runs, waitsFor);
     });
     it("unauth unicast event callback", function() {
         var client1
@@ -204,8 +216,8 @@ describe("Server Startup", function() {
 
         runs(
             function() { 
-                client1 = HubClient.getClientHub('http://localhost:' + port);
-                client1.on('eventHubReady', function() {
+                getClient('http://localhost:' + port, function(cl) {
+                    client1 = cl;
                     connected = true;
                 });
             }
@@ -230,7 +242,48 @@ describe("Server Startup", function() {
         waitsFor(function() { return failed; }, "Clients send/receive event", 5000);
         runs(function() { client1.close(); expect(failed).toMatch(/not authorized/i); });
 
-        runs(function() { setTimeout(function() { reallyDone = true; }, 20000); });
-        waitsFor(function() { return reallyDone; }, "All Done", 25000);
+        beDone(runs, waitsFor);
+    });
+    it("unicast event callback with error", function() {
+        var client1
+            , client2
+            , bothConnected
+            , gotFoo
+            , reallyDone
+        ;
+
+        runs(
+            function() { 
+                getClient('http://localhost:' + port + '?token=ehrox', function(cl) {
+                    client1 = cl;
+                    getClient('http://localhost:' + port, function(cl) {
+                        client2 = cl;
+                        bothConnected = true;
+                    });
+                });
+            }
+        );
+
+        waitsFor(function() { return bothConnected; }, "Clients could not connect to hub", 5000);
+
+        runs(
+            function() { 
+                client1.on('foo', function(data, callback) {
+                    expect(data.data).toBe('rox');
+                    callback('ERROR');
+                }, { type: 'unicast', cb: function(err) {
+                    if (!err) {
+                        client2.emit('foo', { data: 'rox' }, 
+                            function(err) { expect(err).toBe('ERROR'); gotFoo = true; });
+                        };
+                    }
+                });
+            }
+        );
+
+        waitsFor(function() { return gotFoo; }, "Clients send/receive event", 5000);
+        runs(function() { client1.close(); client2.close(); expect(gotFoo).toBeTruthy(); });
+
+        beDone(runs, waitsFor);
     });
 });
