@@ -26,7 +26,6 @@ describe("Server Startup", function() {
     it("Started and can connect", function() {
         var client
             , connected
-            , reallyDone
         ;
 
         runs(function() {
@@ -84,7 +83,6 @@ describe("Server Startup", function() {
             , allConnected
             , gotFoo1
             , gotFoo2
-            , reallyDone
         ;
 
         runs(
@@ -106,13 +104,15 @@ describe("Server Startup", function() {
 
         runs(
             function() { 
-                client1.on('foo', function() {
+                client1.on('foo', function(data) {
+                    expect(data.some).toBe('data');
                     gotFoo1 = true;
                 });
-                client3.on('foo', function() {
+                client3.on('foo', function(data) {
+                    expect(data.some).toBe('data');
                     gotFoo2 = true;
                 });
-                client2.emit('foo');
+                client2.emit('foo', { some: 'data' });
             }
         );
 
@@ -133,7 +133,6 @@ describe("Server Startup", function() {
             , client2
             , bothConnected
             , gotFoo
-            , reallyDone
         ;
 
         runs(
@@ -170,7 +169,6 @@ describe("Server Startup", function() {
             , client2
             , bothConnected
             , gotFoo
-            , reallyDone
         ;
 
         runs(
@@ -211,7 +209,6 @@ describe("Server Startup", function() {
         var client1
             , connected
             , failed
-            , reallyDone
         ;
 
         runs(
@@ -249,7 +246,6 @@ describe("Server Startup", function() {
             , client2
             , bothConnected
             , gotFoo
-            , reallyDone
         ;
 
         runs(
