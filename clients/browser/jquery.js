@@ -1,3 +1,5 @@
+// Copyright (c) 2012-2013 Mark Ethan Trostler
+// MIT License - http://opensource.org/licenses/mit-license.php
 (function( $ ) {
      $.fn.eventHub = function(io, url) {
         var $this = $(this)

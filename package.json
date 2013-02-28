@@ -10,7 +10,7 @@
     "yui",
     "jquery"
   ],
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "Mark Ethan Trostler <mark@zzo.com>",
   "preferGlobal": true,
   "bin": {
@@ -31,11 +31,12 @@
   "homepage": "https://github.com/zzo/EventHub",
   "dependencies": {
     "socket.io": "~0.8.7",
-    "node-uuid": "~1.3",
+    "node-uuid": "~1.3"
+  },
+  "devDependencies": {
     "jasmine-node": ""
   },
   "config": {
     "port": "5883"
-  },
-  "devDependencies": {}
+  }
 }

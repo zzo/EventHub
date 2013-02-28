@@ -1,3 +1,5 @@
+// Copyright (c) 2012-2013 Mark Ethan Trostler
+// MIT License - http://opensource.org/licenses/mit-license.php
 var connect = require('connect')
     , server = connect.createServer(
         connect.logger()
@@ -10,7 +12,3 @@ var connect = require('connect')
 
 server.listen(port);
 console.log('Listening on port ' + port);
-
-    
-// blue.vim      default.vim  desert.vim   evening.vim  morning.vim  pablo.vim      README.txt  shine.vim  torte.vim
-//darkblue.vim  delek.vim    elflord.vim  koehler.vim  murphy.vim   peachpuff.vim  ron.vim     slate.vim  zellner.vim

@@ -1,3 +1,5 @@
+// Copyright (c) 2012-2013 Mark Ethan Trostler
+// MIT License - http://opensource.org/licenses/mit-license.php
 var eventHub = require('../../clients/server/eventClient.js').getClientHub('http://localhost:5883?token=ehrox');
 
 var worker = function(data) {

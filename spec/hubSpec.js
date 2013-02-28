@@ -1,3 +1,5 @@
+// Copyright (c) 2012-2013 Mark Ethan Trostler
+// MIT License - http://opensource.org/licenses/mit-license.php
 var events = require('events')
     , HubClient = require("../clients/server/eventClient")
     , Hub = require("../hub/hub")
