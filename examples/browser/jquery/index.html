@@ -6,18 +6,17 @@
 <head>
 </head>
 <body>
- <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
- <script src="http://dashr.net:5883/socket.io/socket.io.js"></script>
- <script src="http://dashr.net:5883/jquery.js"></script>
+ <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
+ <script src="//localhost:5883/socket.io/socket.io.js"></script>
+ <script src="//localhost:5883/jquery.js"></script>
+
  <button id="button">Press Me</button>
 <script>
-    var hub = new $.fn.eventHub(io, 'http://dashr.net:5883');
+    var hub = new $.fn.eventHub(io, 'http://localhost:5883');
     hub.bind('eventHubReady', function() {
         var clickEvent = hub.addEvent('click');
         $('#button').bind('click',
             function(event) {
-                console.log('clicked on button - making new event for hub');
-                console.log(clickEvent);
                 clickEvent.trigger({ button: 'clicked' },
                     function(back, b2) { 
                         console.log("callback from event listener!");
@@ -29,11 +28,11 @@
         );
         // OR hub.bind('click', ...
         clickEvent.bind(
-            function(event, obj, fun) {
+            function(event, fun) {
                 console.log('got local click event');
                 console.log(arguments);
                 fun('BACK', { mark: 'rox' });
-            }, { type : 'unicast' }
+            }, { type : 'multicast' , secret: 'oo', cb: function(err) { console.log(err); } }
         );
     }); 
 </script>

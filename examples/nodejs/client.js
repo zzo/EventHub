@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2013 Mark Ethan Trostler
 // MIT License - http://opensource.org/licenses/mit-license.php
-var eventHub = require('../../clients/server/eventClient.js').getClientHub('http://localhost:5883?token=ehrox');
+//var eventHub = require('../../clients/server/eventClient.js').getClientHub('http://localhost:5883?token=ehrox');
+var eventHub = require('../../clients/server/eventClient.js').getClientHub('zzo.eventhub.jit.su?token=ehrox');
+console.log(eventHub);
 
 var worker = function(data) {
     console.log("in dowork:");
@@ -10,6 +12,7 @@ var worker = function(data) {
 }
 
 eventHub.on('eventHubReady', function() { 
+    console.log('event hub ready!');
     eventHub.on('click', eventHub.makeListener(worker), { type: 'unicast' });
 });
 

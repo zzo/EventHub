@@ -26,7 +26,7 @@ describe("NodeJS Client", function() {
         var fakeSocket = { 
             emit: function(action, eventName, what) {
                 expect(action).toMatch(/newListener|eventHub:on/);
-                expect(eventName).toMatch(/eventClient:unicastfoo|foo/);
+                expect(eventName).toMatch(/eventClient:unicast:0|foo/);
                 if (typeof what == 'object') {
                     expect(what).toEqual(type);
                 } else {

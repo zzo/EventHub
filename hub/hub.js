@@ -2,7 +2,7 @@
 // MIT License - http://opensource.org/licenses/mit-license.php
 module.exports = (function() {
 
-    var port = process.env['npm_package_config_' + port] || 5883
+    var port = process.env['npm_package_config_port'] || 5883
         , http    = require('http')
         , uuid    = require('node-uuid')
         , io      = require('socket.io')
@@ -107,10 +107,24 @@ module.exports = (function() {
                 // All sockets connected to hub just broadcast their events 
                 //    to everyone else.... UNLESS unicast
                 socket.$emit = function() {
-                    var ss, event, i
+                    var event, i
                         , args = Array.prototype.slice.call(arguments)
                     ;
             
+                    function send_with_session(socket_id) {
+                        var ss = sockets[socket_id]; // 'ss' is socket to send to
+                        // 'socket' is where this event came from
+                        if (ss) {
+                            if (typeof(args[1] === 'object')) {
+                                // toss in session key
+                                if (hs.session) {
+                                    args[1]['eventHub:session'] = hs.session;
+                                } 
+                            }
+                            ss.emit.apply(ss, args);
+                        }
+                    }
+
                     // some sanity
                     if (args[0].match(/^eventClient/)) {
                         // Hey only _I_ can send these messages!!
@@ -144,7 +158,8 @@ module.exports = (function() {
                         });
                     } else if (args[0] === 'eventHub:on') {
                         var eventName = args[1]
-                            , xtra    = args[2];
+                            , xtra    = args[2]
+                        ;
                         if (xtra.type === 'unicast') {
                             if (hs.authenticated) {
                                 if (events[eventName]) {
@@ -156,12 +171,30 @@ module.exports = (function() {
                                 }
                                 events[eventName] = socket.id;
                                 // tell listener they are good to go
-                                socket.emit("eventClient:unicast" + eventName);
+                                socket.emit("eventClient:unicast:" + xtra.ts);
                             } else {
                                 // not authorized to listen for unicast events
                                 //   do something smart...
-                                socket.emit("eventClient:unicast" + eventName, "Not Authorized");
+                                socket.emit("eventClient:unicast:" + xtra.ts, { error: 'Not Authorized' });
                                 console.log('UNAUTH socket tried to listen for unicast event');
+                            }
+                        } else if (xtra.type === 'multicast') {
+                            if (!events[eventName]) {
+                                // new multicast event
+                                xtra.secret = xtra.secret || secret; // default to global secret
+                                events[eventName] = { secret: xtra.secret, sockets: [ socket.id ] };
+                                socket.emit("eventClient:multicast:" + xtra.ts);
+                            } else {
+                                if (events[eventName].secret === xtra.secret) {
+                                    // add to existing multicast event
+                                    events[eventName].sockets.push(socket.id);
+                                    socket.emit("eventClient:multicast:" + xtra.ts);
+                                } else {
+                                    // multicast password is wrong!
+                                    socket.emit("eventClient:multicast:" + xtra.ts, 
+                                            { error: "Not Authorized" });
+                                    console.log('UNAUTH socket tried to listen for multicast event - bad secret');
+                                }
                             }
                         }
                     } else {
@@ -175,7 +208,13 @@ module.exports = (function() {
                                 }
                             }
     
-                            if (events[args[0]]) { // UNICAST
+                            if (events[args[0]] && events[args[0]].secret) {
+                                // MULTICAST
+                                var multi_sockets = events[args[0]].sockets;
+                                multi_sockets.forEach(function(send_socket) {
+                                    send_with_session(send_socket);
+                                });
+                            } else if (events[args[0]]) { // UNICAST
                                 /* 
                                 * So this can be a message from a client or from a backend to
                                 *  another backend
@@ -184,6 +223,8 @@ module.exports = (function() {
                                 * If it's from a backend then the backend needs to include the session
                                 *    it should already have  if it's needed
                                 */
+                                send_with_session(events[args[0]]);
+                                /*
                                 ss = sockets[events[args[0]]]; // 'ss' is socket to send to
                                 // 'socket' is where this event came from
                                 if (ss) {
@@ -195,6 +236,7 @@ module.exports = (function() {
                                     }
                                     ss.emit.apply(ss, args);
                                 }
+                                */
                             } else { // BROADCAST
 
                                 console.log('got broadcast event: ' + args[0]);

@@ -4,6 +4,7 @@
      $.fn.eventHub = function(io, url) {
         var $this = $(this)
             , _this = $this
+            , eid = 0
             ;
 
         if ($.fn.eventHub.EH) {
@@ -28,10 +29,11 @@
         }
 
 	    $this.socket.on('ready', function(session) {
-            document.cookie = 'eventHub=' + session + '; expires=Thu, 11 Aug 2069 20:47:11 UTC; path=/`
+            document.cookie = 'eventHub=' + session + '; expires=Thu, 11 Aug 2069 20:47:11 UTC; path=/';
             _this.session = session;
             _this.socket.$emit = function() { 
-                _this.triggerHandler.call(_this, arguments[0], Array.prototype.splice.call(arguments, 1)); 
+                // skip over jquery event object
+                _this.triggerHandler(arguments[0], Array.prototype.splice.call(arguments, 2)); 
             };
             _this._trigger('eventHubReady');
         });
@@ -44,10 +46,19 @@
             _this.socket.emit.apply(_this.socket, arguments);
         };
 
-        /* Tell event switch we're listening for a unicast event... */
+        /* Tell event switch we're listening for a unicast/multicast event... */
         $this.bind = function(eventName, func, args) {
             this._bind.call(this, eventName, func);
             if (typeof(args) !== 'undefined') {
+                args.ts = eid++;
+                this.one('eventClient:' + args.type + ':' + args.ts, function(eventObj, err) {
+                    if (err) {
+                        $this.off(eventName, func);
+                    }
+                    if (args.cb) {
+                        args.cb(err);
+                    }
+                });
                 this.trigger('eventHub:on', eventName, args);
             }
         };

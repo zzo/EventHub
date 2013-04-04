@@ -1,11 +1,13 @@
 // Copyright (c) 2012-2013 Mark Ethan Trostler
 // MIT License - http://opensource.org/licenses/mit-license.php
 module.exports = {
-    getHub: function() {
+    eid: 0
+    , getHub: function() {
 
         var events  = require("events")
             , util  = require("util")
             , eventHubF = function() {
+
                 events.EventEmitter.call(this); 
                 this._emit = this.emit; // keep original emit method
                 this._on   = this.on; // keep original emit method
@@ -21,8 +23,10 @@ module.exports = {
                 this.on = function(eventName, func, args) {
                     this._on.apply(this, arguments);
                     if (typeof(args) !== 'undefined') {
+                        var ts = module.exports.eid++;
+                        args.ts = ts;
                         this.emit('eventHub:on', eventName, args);
-                        this.once('eventClient:unicast' + eventName, function(err) {
+                        this.once('eventClient:' + args.type + ':' + args.ts, function(err) {
                             if (args.cb) {
                                 args.cb(err);
                             }
@@ -101,6 +105,10 @@ module.exports = {
 
         socket.on('connect', function () {
             eventHub.addSocket(socket);
+        });
+
+        socket.on('error', function (e) {
+            console.log("E: " + e);
         });
 
         return eventHub;

@@ -222,6 +222,8 @@ Upon specifying { type: 'unicast' } you can/should also specify a callback to de
     hub.on('myunicastevent', function() {}, { type: 'unicast', cb: function(error) {
         if (error) {
             // I was not able to register my listener for this event!
+            //  'error' is an OBJECT with a single property: 'error' - which is a string
+            //  console.log('unicast registration failed beacuse: ' + error.error);
         } else {
             // all is cool & my event is now registered to me
         }
@@ -242,6 +244,32 @@ This isi the time to finish up any event handling the listener is currently doin
 This aids deployment by allowing safe shutdown of older modules/handlers and bring up of new without dropping any events
 
 Examples of this kind of event are authentication and session management.
+
+### Multicast
+
+Multicast events allow the event listener(s) to specify the secret necessary to listen for events. The first listener to register for an event sets the event password.  All subsequent listeners must supply the same password to successfully listens for those events.
+
+BE AWARE THAT ONLY ONE LISTENER SHOULD ACTUALLY RESPOND TO THE EVENT!!!
+
+Multicast events are useful for non-responding cross-cutting concerns such as logging, profiling, and the like.  This essentially enables non-responding cross-cutting concers for  unicast event listeners without effecting the original listener.
+
+So if you want to log or profile an event you can hook up a generic logger or profiler for an event without effecting the original listener for that event.  It looks like this:
+
+    hub.on('eventName', callback, { type: 'multicast', secret: 'mysecret', cb: function(err) { ... } });
+
+Anyone else can listen for this event if they provide the same secret when registering. You can verify you listened successfuly by supplying a 'cb' parameter to the event metadata exactly like the 'unicast' case:
+
+    hub.on('eventName', callback, { type: 'multicast', secret: 'mysecret', function(err) {
+            if (!err) {
+                // all is good
+            } else {
+                // probably supplied the wrong password!
+                console.log('Multicast registration failed: ' + error.error);
+            }
+        }
+    });
+
+Now when 'eventName' is fired every multicast listener will receive the message.  ONLY ONE LISTENER CAN RESPOND if a response is expected!
 
 ### Broadcast
 

@@ -7,13 +7,20 @@
 </head>
 <body>
  <script src="http://yui.yahooapis.com/3.4.1/build/yui/yui-min.js"></script>
- <script src="http://bidsilent.net:5883/socket.io/socket.io.js"></script>
- <script src="http://bidsilent.net:5883/yui3.js"></script>
+ <!--
+ <script src="http://zzo.eventhub.jit.su/socket.io/socket.io.js"></script>
+ <script src="http://zzo.eventhub.jit.su/yui3.js"></script>
+ -->
+
+ <script src="//localhost:5883/socket.io/socket.io.js"></script>
+ <script src="//localhost:5883/yui3.js"></script>
  <button id="button">Press Me</button>
 <script>
+    //YUI({ filter: 'debug' }).use('node', 'EventHub', function(Y) {
     YUI().use('node', 'EventHub', function(Y) {
 
-        var hub = new Y.EventHub(io, 'http://bidsilent.net:5883');
+        //var hub = new Y.EventHub(io, 'http://zzo.eventhub.jit.su');
+        var hub = new Y.EventHub(io, 'http://localhost:5883');
         hub.on('eventHubReady', function() {
             var clickEvent = hub.addEvent('click');
             console.log(clickEvent);
@@ -29,9 +36,27 @@
                 }
             );
             clickEvent.on(function(o1, fn) {
-                    Y.log('got local click event: ' + o1.button);
-                }, { type: 'unicast' }
+                    Y.log('got local click event1: ' + o1.button);
+                    fn('a', 'b');
+                }
+                , {
+                    type: 'multicast'
+                    , secret: 'oo'
+                    , cb: function(err) { Y.log('ERR ON1: ' + err); }
+                }
             );
+
+            clickEvent.on(function(o1, fn) {
+                    Y.log('got local click event2: ' + o1.button);
+                    fn('c', 'd');
+                }
+                , {
+                    type: 'multicast'
+                    , secret: 'ooo'
+                    , cb: function(err) { Y.log('ERR ON2: ' + err); }
+                }
+            );
+
             hub.on('eventClient:done', function(ff) { console.log('event done: ' + ff); });
             hub.on('zot', function(data) { console.log('got: ' + data); });
         });

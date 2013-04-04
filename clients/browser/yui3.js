@@ -2,18 +2,20 @@
 // MIT License - http://opensource.org/licenses/mit-license.php
 YUI().add('EventHub', function(Y) {
     Y.EventHub = function(io, url) {
-        var _this    = this,
-            socket = io.connect(url)
+        var _this    = this
+            , socket = io.connect(url)
+            , eid = 0
         ;
 
         // Bookkeeping
         this.events  = {};
         this._fire   = this.fire;
+        this._on     = this.on;
 
         // Get the session & cookie-ize the  session
 	    socket.on('ready', function(session) {
             Y.Cookie.set("eventHub", session, { expires: new Date("August 11, 2069"), path: '/' });
-            socket.$emit = function() { /* fire events locally */ _this._fire.apply(_this, arguments); };
+            socket.$emit = function() { /* fire the event locally */ _this._fire.apply(_this, arguments); };
             _this._fire('eventHubReady');
         });
 
@@ -28,6 +30,26 @@ YUI().add('EventHub', function(Y) {
             socket.emit.apply(socket, arguments);
         };
 
+        /* Tell event switch we're listening for a unicast event... */
+        this.on = function(eventName, func, args) {
+            this._on.call(this, eventName, func);
+            if (typeof(args) !== 'undefined') {
+                args.ts = eid++;
+                this.on('eventClient:' + args.type + ':' + args.ts, function(err) {
+                    if (err) {
+                        // unhook this guy
+                        this.detach(eventName, func);
+                    }
+                    if (args.cb) {
+                        args.cb(err);
+                    }
+                    // don't need this anymore
+                    this.detach('eventClient:' + args.type + ':' + args.ts);
+                });
+                this.fire('eventHub:on', eventName, args);
+            }
+        };
+
         /*
          * An optional helper function to set up compiler-checkable event names
          *  var clickEvent = hub.addEvent('click');
@@ -35,11 +57,14 @@ YUI().add('EventHub', function(Y) {
          *  clickEvent.fire({ foo: 'goo' }, ... );
          */
         this.addEvent = function(eventName) {
-            var _this = this;
+            //var _this = this;
 
             // Dummy up an object that drop in the event name for listening & firing
             this.events[eventName] = {
-                on: function(callback) { _this.on.call(_this, eventName, callback); }
+                on: function(callback, opts) { 
+                    //    _this.on.call(_this, eventName, callback, opts);
+                        _this.on(eventName, callback, opts);
+                    }
                 , fire: function() {
                     // Shove event name back in argument list & fire it
                     Array.prototype.unshift.call(arguments, eventName);

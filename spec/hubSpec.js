@@ -207,6 +207,7 @@ describe("Server Startup", function() {
 
         beDone(runs, waitsFor);
     });
+
     it("unauth unicast event callback", function() {
         var client1
             , connected
@@ -239,10 +240,11 @@ describe("Server Startup", function() {
         );
 
         waitsFor(function() { return failed; }, "Clients send/receive event", 5000);
-        runs(function() { client1.close(); expect(failed).toMatch(/not authorized/i); });
+        runs(function() { client1.close(); expect(failed.error).toMatch(/not authorized/i); });
 
         beDone(runs, waitsFor);
     });
+
     it("unicast event callback with error", function() {
         var client1
             , client2
@@ -266,10 +268,12 @@ describe("Server Startup", function() {
 
         runs(
             function() { 
+
                 client1.on('foo', function(data, callback) {
                     expect(data.data).toBe('rox');
                     callback('ERROR');
-                }, { type: 'unicast', cb: function(err) {
+                }, { type: 'unicast', 
+                    cb: function(err) {
                     if (!err) {
                         client2.emit('foo', { data: 'rox' }, 
                             function(err) { expect(err).toBe('ERROR'); gotFoo = true; });
