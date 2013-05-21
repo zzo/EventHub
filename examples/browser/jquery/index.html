@@ -7,12 +7,12 @@
 </head>
 <body>
  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
- <script src="//localhost:5883/socket.io/socket.io.js"></script>
- <script src="//localhost:5883/jquery.js"></script>
+ <script src="http://zzo.eventhub.jit.su/socket.io/socket.io.js"></script>
+ <script src="http://zzo.eventhub.jit.su/jquery.js"></script>
 
  <button id="button">Press Me</button>
 <script>
-    var hub = new $.fn.eventHub(io, 'http://localhost:5883');
+    var hub = new $.fn.eventHub(io, 'http://zzo.eventhub.jit.su');
     hub.bind('eventHubReady', function() {
         var clickEvent = hub.addEvent('click');
         $('#button').bind('click',
