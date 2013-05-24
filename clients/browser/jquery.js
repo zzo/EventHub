@@ -33,7 +33,16 @@
             _this.session = session;
             _this.socket.$emit = function() { 
                 // skip over jquery event object
-                _this.triggerHandler(arguments[0], Array.prototype.splice.call(arguments, 2)); 
+                var trig = arguments[1] || {};
+                if (trig.type) {
+                    if (console && console.error) {
+                        console.error("Your response should not use the key 'type' thanks jQuery!");
+                        console.error("it will be clobbered - you can find it in obj._type now");
+                    }
+                    trig._type = trig.type;
+                }
+                trig.type = arguments[0];
+                _this._trigger(trig, Array.prototype.splice.call(arguments, 2)); 
             };
             _this._trigger('eventHubReady');
         });
