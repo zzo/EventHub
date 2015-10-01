@@ -201,7 +201,7 @@ Putting It All Together
 
 So you start the EventHub, start the example server, and start the example NodeJS client.  Go to your browser and point it at the example server and click the button.  An event will propagate from the browser, to the EventHub, and finally to the NodeJS client.  The NodeJS client will call the event's callback which will execute back in the browser.  Simple!
 
-You've not got an awesome event-based archetecture so go wild!
+You've not got an awesome event-based architecture so go wild!
 
 ## Event Metadata
 
